@@ -6,9 +6,12 @@ import json
 import requests
 import time
 import io
+import shutil
 
 configFile = 'trello-backup.config'
 configFile = os.path.join(os.path.abspath(os.path.dirname(__file__)), configFile)
+now = time.strftime("%Y%m%d-%H%M")
+
 
 def main():
     if os.path.isfile(configFile):
@@ -21,12 +24,14 @@ def main():
     TOKEN = config.get('Credentials', 'TOKEN')
 
     API_URL = config.get('Paths', 'API_URL')
-    OUTPUT_DIRECTORY = config.get('Paths', 'OUTPUT_DIRECTORY')
+    BASE_DIRECTORY = config.get('Paths', 'BASE_DIRECTORY')
+    OUTPUT_DIRECTORY = BASE_DIRECTORY + u'/' + now
 
     TOKEN_EXPIRATION = config.get('Options', 'TOKEN_EXPIRATION')
     APP_NAME = config.get('Options', 'APP_NAME')
     ORGANIZATION_ID = config.get('Options', 'ORGANIZATION_ID')
     PRETTY_PRINT = config.get('Options', 'PRETTY_PRINT') == 'yes'
+    NUM_BACKUPS = config.get('Options', 'NUM_BACKUPS')
 
     if not API_KEY:
         print('You need an API key to run this app.')
@@ -82,7 +87,6 @@ def main():
         os.makedirs(OUTPUT_DIRECTORY)
 
     print("Backing up boards to {0}:".format(OUTPUT_DIRECTORY))
-#    epoch_time = str(int(time.time()))
 
     for board in boards.json():
         if ORGANIZATION_ID and board["idOrganization"] != ORGANIZATION_ID:
@@ -94,6 +98,22 @@ def main():
             args = dict( sort_keys=True, indent=4) if PRETTY_PRINT else dict()
             data = json.dumps(boardContents.json(), ensure_ascii=False, **args)
             file.write(unicode(data))
+
+    #Keep NUM_BACKUPS copies of the most recent backups
+    if NUM_BACKUPS == "all":
+        sys.exit(0)
+
+    sorted_backups = sorted_ls(BASE_DIRECTORY)
+    while len(sorted_backups) > int(NUM_BACKUPS):
+        old_dir = sorted_backups.pop(0)
+        shutil.rmtree(BASE_DIRECTORY + u'/' + old_dir)
+
+
+def sorted_ls(dir):
+    """ Return the contents of a given directory sorted by ascending modification time. """
+    mtime = lambda f: os.stat(os.path.join(dir, f)).st_mtime
+    return list(sorted(os.listdir(dir), key=mtime))
+
 
 if __name__ == '__main__':
     main()

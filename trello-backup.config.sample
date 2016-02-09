@@ -4,7 +4,7 @@ TOKEN =
 
 [Paths]
 API_URL = https://api.trello.com/1/
-OUTPUT_DIRECTORY = backups
+BASE_DIRECTORY = backups
 
 [Options]
 ; expiration: "1hour", "1day", "30days", "never"
@@ -14,3 +14,5 @@ APP_NAME = Trello-Backup
 ; if you only want to backup organization cards, specify the trello id of the organization
 ORGANIZATION_ID =
 PRETTY_PRINT = no
+; specify the number of backups to keep, or set to "all"
+NUM_BACKUPS = all
